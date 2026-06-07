@@ -54,6 +54,8 @@ export const generateWaSession = async (req: Request, res: Response): Promise<vo
     let cleanPhone = phone.replace(/[^0-9]/g, '');
     if (cleanPhone.startsWith('0')) {
       cleanPhone = '62' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('8')) {
+      cleanPhone = '62' + cleanPhone;
     }
 
     // Generate unique session ID: PB-XXXXXX

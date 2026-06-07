@@ -100,10 +100,21 @@ export const sendMessageToPhone = async (phone: string, message: string): Promis
     return false;
   }
   try {
-    // format phone properly (e.g. 62812... -> 62812...@c.us)
-    const chatId = `${phone}@c.us`;
-    await client.sendMessage(chatId, message);
-    return true;
+    // Attempt to resolve the number using WhatsApp's API
+    // This is required for numbers that the bot has not chatted with before
+    const numberDetails = await client.getNumberId(phone);
+    
+    if (numberDetails) {
+      // The number is registered on WhatsApp
+      await client.sendMessage(numberDetails._serialized, message);
+      return true;
+    } else {
+      console.log(`[WA] Number ${phone} is not registered on WhatsApp.`);
+      // Fallback just in case
+      const chatId = `${phone}@c.us`;
+      await client.sendMessage(chatId, message);
+      return true;
+    }
   } catch (error) {
     console.error('Failed to send WA message:', error);
     return false;
