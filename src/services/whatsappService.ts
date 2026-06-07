@@ -3,6 +3,7 @@ import qrcode from 'qrcode-terminal';
 import { verifySessionWithPhone } from '../controllers/waAuthController';
 
 let client: Client;
+let isReady = false;
 
 export const initializeWhatsApp = () => {
   console.log('Initializing WhatsApp Web Client...');
@@ -16,6 +17,7 @@ export const initializeWhatsApp = () => {
   });
 
   client.on('qr', (qr) => {
+    isReady = false;
     console.log('\n======================================================');
     console.log('SCAN QR CODE INI DENGAN WHATSAPP BUSINESS ANDA:');
     console.log('======================================================\n');
@@ -30,6 +32,7 @@ export const initializeWhatsApp = () => {
   });
 
   client.on('ready', () => {
+    isReady = true;
     console.log('\n======================================================');
     console.log('WHATSAPP BOT READY!');
     console.log(`Bot terhubung dengan nomor: ${client.info.wid.user}`);
@@ -80,6 +83,7 @@ export const initializeWhatsApp = () => {
   });
 
   client.on('disconnected', (reason) => {
+    isReady = false;
     console.log('WhatsApp terputus:', reason);
   });
 
@@ -87,11 +91,14 @@ export const initializeWhatsApp = () => {
 };
 
 export const getBotNumber = (): string | null => {
-  return client?.info?.wid?.user || null;
+  return isReady && client?.info?.wid?.user ? client.info.wid.user : null;
 };
 
 export const sendMessageToPhone = async (phone: string, message: string): Promise<boolean> => {
-  if (!client) return false;
+  if (!client || !isReady) {
+    console.log('[WA] Cannot send message: Bot is not ready yet. Please scan the QR code.');
+    return false;
+  }
   try {
     // format phone properly (e.g. 62812... -> 62812...@c.us)
     const chatId = `${phone}@c.us`;
