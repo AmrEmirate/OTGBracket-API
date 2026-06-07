@@ -173,7 +173,67 @@ export const pollWaSession = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const verifyMagicLink = async (req: Request, res: Response): Promise<void> => {
+export const verifyMagicLinkGet = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      res.status(400).send('Token is missing');
+      return;
+    }
+
+    let foundSession: SessionData | null = null;
+
+    for (const [key, data] of authSessions.entries()) {
+      if (data.magicToken === token && data.status === 'PENDING') {
+        foundSession = data;
+        break;
+      }
+    }
+
+    if (!foundSession) {
+      res.status(400).send(`
+        <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+          <h2 style="color: #ff3333;">Tautan Kadaluarsa atau Tidak Valid</h2>
+          <p>Tautan ini sudah tidak bisa digunakan. Silakan ulangi proses login dari browser Anda.</p>
+        </div>
+      `);
+      return;
+    }
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Konfirmasi Login OTGBracket</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+          .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 100%; box-sizing: border-box; }
+          h2 { color: #1c1e21; margin-bottom: 16px; margin-top: 0; }
+          p { color: #606770; margin-bottom: 32px; line-height: 1.5; }
+          .btn { background-color: #25D366; color: white; border: none; padding: 14px 24px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: background-color 0.2s; }
+          .btn:hover { background-color: #128C7E; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>Konfirmasi Login</h2>
+          <p>Anda akan masuk ke <strong>OTGBracket</strong> menggunakan nomor WhatsApp <strong>${foundSession.phone}</strong>. Lanjutkan?</p>
+          <form method="POST" action="/api/auth/wa/magic?token=${token}">
+            <button type="submit" class="btn">Masuk Sekarang</button>
+          </form>
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('Verify Magic Link GET Error:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
+export const verifyMagicLinkPost = async (req: Request, res: Response): Promise<void> => {
   try {
     const token = req.query.token as string;
     if (!token) {
@@ -250,7 +310,7 @@ export const verifyMagicLink = async (req: Request, res: Response): Promise<void
     
     res.redirect(callbackUrl);
   } catch (error) {
-    console.error('Verify Magic Link Error:', error);
+    console.error('Verify Magic Link POST Error:', error);
     res.status(500).send('Internal server error');
   }
 };

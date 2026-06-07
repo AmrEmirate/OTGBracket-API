@@ -106,13 +106,13 @@ export const sendMessageToPhone = async (phone: string, message: string): Promis
     
     if (numberDetails) {
       // The number is registered on WhatsApp
-      await client.sendMessage(numberDetails._serialized, message);
+      await client.sendMessage(numberDetails._serialized, message, { linkPreview: false });
       return true;
     } else {
       console.log(`[WA] Number ${phone} is not registered on WhatsApp.`);
       // Fallback just in case
       const chatId = `${phone}@c.us`;
-      await client.sendMessage(chatId, message);
+      await client.sendMessage(chatId, message, { linkPreview: false });
       return true;
     }
   } catch (error) {
