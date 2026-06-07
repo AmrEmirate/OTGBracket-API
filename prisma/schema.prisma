@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int          @id @default(autoincrement())
+  phone          String       @unique
+  otp            String?
+  otpExpiresAt   DateTime?
+  role        String       @default("PARTICIPANT") // "ADMIN" | "PARTICIPANT"
+  tournaments Tournament[] // If user is an admin, they can manage multiple tournaments
+  teams       Team[]       // If user is a participant, they can own/manage teams
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  logo      String?
+  phone     String?
+  ownerId   Int?
+  owner     User?    @relation(fields: [ownerId], references: [id])
+  matchesA  Match[]  @relation("TeamA")
+  matchesB  Match[]  @relation("TeamB")
+}
+
+model Tournament {
+  id               Int      @id @default(autoincrement())
+  name             String
+  description      String?
+  format           String   @default("SINGLE_ELIMINATION") // "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION"
+  participantCount Int
+  status           String   @default("UPCOMING") // "UPCOMING" | "LIVE" | "FINISHED"
+  adminId          Int
+  admin            User     @relation(fields: [adminId], references: [id])
+  matches          Match[]
+}
+
+model Match {
+  id                 Int        @id @default(autoincrement())
+  tournamentId       Int
+  tournament         Tournament @relation(fields: [tournamentId], references: [id])
+  round              Int
+  isLowerBracket     Boolean    @default(false)
+  teamAId            Int?
+  teamA              Team?      @relation("TeamA", fields: [teamAId], references: [id])
+  teamBId            Int?
+  teamB              Team?      @relation("TeamB", fields: [teamBId], references: [id])
+  scoreA             Int        @default(0)
+  scoreB             Int        @default(0)
+  status             String     @default("PENDING") // "PENDING" | "LIVE" | "FINISHED"
+  scheduledTime      DateTime?
+  winnerId           Int?
+  evidenceLobby      String?
+  evidenceResult     String?
+  evidenceStatus     String     @default("PENDING") // "PENDING" | "UPLOADED" | "APPROVED" | "REJECTED"
+  isWalkover         Boolean    @default(false)
+  nextMatchId        Int?
+  nextMatch          Match?     @relation("NextMatch", fields: [nextMatchId], references: [id])
+  previousMatches    Match[]    @relation("NextMatch")
+  nextLoserMatchId   Int?
+  nextLoserMatch     Match?     @relation("NextLoserMatch", fields: [nextLoserMatchId], references: [id])
+  previousLoserMatches Match[]  @relation("NextLoserMatch")
+}
