@@ -20,6 +20,13 @@ export const initializeWhatsApp = () => {
     console.log('SCAN QR CODE INI DENGAN WHATSAPP BUSINESS ANDA:');
     console.log('======================================================\n');
     qrcode.generate(qr, { small: true });
+    
+    // Fallback: Generate a clickable link to an image of the QR Code
+    // Very useful if terminal logs mess up the ASCII formatting
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qr)}`;
+    console.log('\nJika QR di atas terpotong/rusak, BUKA LINK INI DI BROWSER UNTUK SCAN:');
+    console.log(qrUrl);
+    console.log('\n======================================================\n');
   });
 
   client.on('ready', () => {
