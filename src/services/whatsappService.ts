@@ -38,8 +38,8 @@ export const initializeWhatsApp = () => {
 
   client.on('message', async (msg) => {
     const text = msg.body.trim();
-    // Expected format from frontend: "Login ProBracket - Code: PB-XXXXXX"
-    if (text.startsWith('Login ProBracket - Code: ')) {
+    // Expected format from frontend: "Login OTGBracket - Code: PB-XXXXXX"
+    if (text.startsWith('Login OTGBracket - Code: ')) {
       const parts = text.split('Code: ');
       if (parts.length > 1) {
         const sessionId = parts[1].trim();

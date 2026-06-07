@@ -6,12 +6,13 @@ import prisma from '../config/prisma';
 // In-memory store for login sessions
 // Key: sessionId (e.g. PB-12345), Value: session data
 export interface SessionData {
-  status: 'PENDING' | 'VERIFIED';
+  status: 'PENDING' | 'VERIFIED' | 'CONSUMED';
   role?: 'ADMIN' | 'PARTICIPANT';
   phone?: string;
   waName?: string;
   magicToken?: string;
   createdAt: Date;
+  user?: any;
 }
 export const authSessions = new Map<string, SessionData>();
 
@@ -71,7 +72,7 @@ export const generateWaSession = async (req: Request, res: Response): Promise<vo
     // Send Magic Link via WhatsApp
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
     const magicLinkUrl = `${backendUrl}/api/auth/wa/magic?token=${magicToken}`;
-    const message = `Halo dari ProBracket! 👋\n\nSeseorang mencoba masuk ke akun Anda. Jika ini Anda, klik tautan ajaib di bawah ini untuk langsung masuk:\n\n🔗 ${magicLinkUrl}\n\nAbaikan pesan ini jika Anda tidak merasa login.`;
+    const message = `Halo dari OTGBracket! 👋\n\nSeseorang mencoba masuk ke akun Anda. Jika ini Anda, klik tautan ajaib di bawah ini untuk langsung masuk:\n\n🔗 ${magicLinkUrl}\n\nAbaikan pesan ini jika Anda tidak merasa login.`;
     
     const sent = await sendMessageToPhone(cleanPhone, message);
     if (!sent) {
@@ -108,6 +109,16 @@ export const pollWaSession = async (req: Request, res: Response): Promise<void> 
 
     if (session.status === 'PENDING') {
       res.json({ status: 'PENDING' });
+      return;
+    }
+
+    if (session.status === 'CONSUMED' && session.user) {
+      const userData = session.user;
+      authSessions.delete(sessionId);
+      res.json({
+        status: 'SUCCESS',
+        user: userData
+      });
       return;
     }
 
@@ -226,8 +237,10 @@ export const verifyMagicLink = async (req: Request, res: Response): Promise<void
       token: jwtToken
     };
 
-    // We can delete the session now since it's consumed
-    authSessions.delete(foundSessionId);
+    // Instead of deleting the session, keep it so that the polling endpoint can pick up the success.
+    foundSession.status = 'CONSUMED';
+    foundSession.user = userData;
+    authSessions.set(foundSessionId, foundSession);
 
     // Redirect to frontend callback
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
